@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
 import 'homescreen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'auth_wrapper.dart';
+import 'welcomescreen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
 
-  bool _obscure = true;
+  bool _obscure = false;
   bool _submitting = false;
 
   @override
@@ -24,6 +29,28 @@ class _LoginScreenState extends State<LoginScreen> {
     _pwdCtrl.dispose();
     super.dispose();
   }
+
+Future<void> login() async {
+  try {
+    await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: _emailCtrl.text.trim(),
+      password: _pwdCtrl.text.trim(),
+    );
+  } catch (e) {
+    // Firebase error handling later if needed
+  }
+}
+
+
+Future<void> resetPassword() async {
+  try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(
+      email: _emailCtrl.text.trim(),
+    );
+  } catch (e) {
+    // (file just has empty catch)
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
           image: DecorationImage(
             image: AssetImage('assets/images/pawpals_bg.png'),
             fit: BoxFit.cover,
-            //opacity: 50,
             alignment: Alignment.center,
             colorFilter: ColorFilter.mode(
               Color(0x10B67845),
@@ -73,25 +99,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         style: const TextStyle(
-                            fontSize: 16, color: Color(0xFF333333)),
+                          fontSize: 16, 
+                          color: Color(0xFF333333),
+                        ),
                         decoration: const InputDecoration(
-                          labelText: 'Username',
+                          labelText: 'Email',
                           labelStyle: TextStyle(color: AppColors.charcoal),
-                          prefixIcon: Icon(Icons.attach_email_outlined, color: AppColors.charcoal),
+                          prefixIcon: Icon(Icons.email_outlined, color: AppColors.charcoal),
                           focusedBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: AppColors.charcoal),
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty){
-                                  return 'Please enter your username';
-                                }
-                                if(v.trim().length <7){
-                                  return 'UserName is not valid';
-                                }
-                                return null;
+                          if (v == null || v.isEmpty) {
+                            return 'Please enter your email';
+                          }
+
+                          final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                          if (!emailRegex.hasMatch(v)) {
+                            return 'Enter a valid email address';
+                          }
+
+                          return null;
                         },
                       ),
+
                       const SizedBox(height: 12),
 
                       // --- Password ---
@@ -130,12 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {
-                            //  Add forgot password logic
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Forgot Password pressed')),
-                            );
-                          },
+                          onPressed: resetPassword,
                           child: const Text(
                             'Forgot password?',
                             style: TextStyle(
@@ -150,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // --- Submit button ---
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.charcoal,
+                          backgroundColor: Color.fromARGB(255, 10, 51, 92),
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 52),
                           shape: RoundedRectangleBorder(
@@ -181,15 +208,24 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             
-            // --- BACK BUTTON ---
+            // --- BACK BUTTON (FIXED) ---
             Positioned(
-         top: 40, // Adjusted for status bar
-     left: 8,
-                            child: IconButton(
-           icon: const Icon(Icons.arrow_back, size: 28),
-     color: AppColors.charcoal, // Use the primary color
-                   onPressed: () {
-    Navigator.of(context).pop();
+              top: 40,
+              left: 8,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, size: 28),
+                color: AppColors.charcoal,
+                onPressed: () {
+                  // Check if there's a screen to pop back to
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    // If no screen behind, go to Welcome screen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                    );
+                  }
                 },
               ),
             ),
@@ -203,25 +239,23 @@ class _LoginScreenState extends State<LoginScreen> {
       _formKey.currentState?.validate() == true && !_submitting;
 
   Future<void> _submit() async {
-    if (_formKey.currentState?.validate() != true) return;
+    if (!_canSubmit) return;
 
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(seconds: 2)); // simulate API call
+
+    await login();
+
     if (!mounted) return;
 
-    if (_submitting) {
-      setState(() => _submitting = false);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logged in successfully! 🎉')),
-      );
+    setState(() => _submitting = false);
 
-      // Navigate to Home Screen after login
-      // For now, just pop back to Welcome
-      Navigator.pushReplacement(
+    
+
+    Navigator.pushAndRemoveUntil(
   context,
-  MaterialPageRoute(builder: (_) => const HomeShell()),
+  MaterialPageRoute(builder: (_) => const AuthWrapper()),
+  (route) => false,
 );
-    }
+
   }
 }

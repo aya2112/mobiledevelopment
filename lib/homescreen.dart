@@ -17,12 +17,7 @@ class _HomeShellState extends State<HomeShell> {
 
   static const _ink = Color.fromARGB(255, 10, 51, 92);
 
-  final _pages = const [
-    HomeTab(),
-    BookTab(),
-    MessagesTab(),
-    ProfileTab(),
-  ];
+  late final List<Widget> _pages;
 
   final _titles = const [
     'PawPals',
@@ -32,38 +27,60 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+
+    // ✅ Pass callback to tabs that need to switch bottom-nav index
+    _pages = [
+      HomeTab(onNavigateToTab: _navigateToTab),
+      BookTab(onNavigateToTab: _navigateToTab),
+      const MessagesTab(),
+      const ProfileTab(),
+    ];
+  }
+
+  void _navigateToTab(int index) {
+    if (index < 0 || index > 3) return;
+    setState(() => _index = index);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        backgroundColor: AppColors.cream,
-        elevation: 0,
-        title: Text(
-          _titles[_index],
-          style: const TextStyle(
-            color: _ink,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-       actions: [
-  Padding(
-    padding: const EdgeInsets.only(right: 12),
-    child: Image.asset(
-      'assets/images/pawpals_logo.png',   // your existing logo file
-      height: 34,                         // adjust size
-      fit: BoxFit.contain,
-    ),
-  ),
-],
 
+      // ✅ Hide AppBar on Home (0) and Book (1) because those screens have their own design/header
+      appBar: (_index == 0 || _index == 1)
+          ? null
+          : AppBar(
+              backgroundColor: AppColors.cream,
+              elevation: 0,
+              title: Text(
+                _titles[_index],
+                style: const TextStyle(
+                  color: _ink,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Image.asset(
+                    'assets/images/pawpals_logo.png',
+                    height: 34,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
 
-      ),
       body: _pages[_index],
+
       bottomNavigationBar: NavigationBar(
         backgroundColor: AppColors.cream,
         indicatorColor: AppColors.mutedTeal.withOpacity(0.15),
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _navigateToTab,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

@@ -1,333 +1,495 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pawpals/booking_confirmation_screen.dart';
 
 class BookTab extends StatefulWidget {
-  const BookTab({super.key});
+  final Function(int)? onNavigateToTab;
+
+  const BookTab({super.key, this.onNavigateToTab});
 
   @override
   State<BookTab> createState() => _BookTabState();
 }
 
 class _BookTabState extends State<BookTab> {
-  final List<String> _dates = ['Today', 'Tue 26', 'Wed 27', 'Thu 28'];
-  final List<int> _durations = [30, 45, 60];
-  final List<String> _times = [
-    '3:00 PM',
-    '3:30 PM',
-    '4:00 PM',
-    '4:30 PM',
-    '5:00 PM',
-    '5:30 PM',
-  ];
-
-  int _selectedDateIndex = 0;
-  int _selectedDuration = 30;
-  String _selectedTime = '4:30 PM';
-
   static const _ink = Color.fromARGB(255, 10, 51, 92);
-  static const _brown = Color(0xFF6B3E22);
-  static const _teal = Color(0xFF6FB3A9);
+  
+  String selectedDate = 'Today';
+  String selectedDuration = '30 min';
+  String selectedTime = '4:00 PM';
+  List<String> selectedDogs = ['Luna'];
+
+  final dates = ['Today', 'Tue 26', 'Wed 27', 'Thu 28'];
+  final durations = ['30 min', '45 min', '60 min'];
+  final times = ['3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'];
+  final availableDogs = ['Luna', 'Max', 'Bella', 'Charlie'];
+
+  String _getUserName() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.displayName != null && user.displayName!.isNotEmpty) {
+      return user.displayName!.split(' ')[0];
+    }
+    return 'Guest';
+  }
+
+  double _calculatePrice() {
+    final basePrice = 20.0;
+    final hours = selectedDuration == '30 min' ? 0.5 : 
+                  selectedDuration == '45 min' ? 0.75 : 1.0;
+    double total = basePrice * hours;
+    if (selectedDogs.length > 1) {
+      total += (selectedDogs.length - 1) * 10.0 * hours;
+    }
+    return total;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      children: [
-        const Text(
-          'Book a walk for your pup',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: _ink,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Date picker
-        const _SectionTitle(title: 'Choose date'),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 60,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _dates.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              final selected = index == _selectedDateIndex;
-              return _SelectableChip(
-                label: _dates[index],
-                selected: selected,
-                onTap: () {
-                  setState(() => _selectedDateIndex = index);
-                },
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Walk details
-        const _SectionTitle(title: 'Walk details'),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 6),
-              ),
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFF5E6D3),
+              Color(0xFFEAD5BE),
             ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Color(0xFFE9DED0),
-                    child: Icon(Icons.pets, color: _ink),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        child: Container(
+          color: const Color(0x20B67845),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Custom Header with Back Button
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                     children: [
-                      const Text('Dog', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _ink.withOpacity(0.08)),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          color: _ink,
+                          onPressed: () {
+                            if (widget.onNavigateToTab != null) {
+                              widget.onNavigateToTab!(0); // Navigate to Home tab
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       const Text(
-                        'Luna',
+                        'Book a Walk',
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
                           color: _ink,
                         ),
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      'Change',
-                      style: TextStyle(
-                        color: _teal,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 12),
-
-              const Text(
-                'Duration',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: _ink,
                 ),
-              ),
-              const SizedBox(height: 8),
 
-              Row(
-                children: _durations.map((d) {
-                  final selected = d == _selectedDuration;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _SelectableChip(
-                      label: '$d min',
-                      selected: selected,
-                      compact: true,
-                      onTap: () => setState(() => _selectedDuration = d),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
+                // Scrollable Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Walk Details Card
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: _ink.withOpacity(0.08)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Selected Dogs List
+                              ...selectedDogs.asMap().entries.map((entry) {
+                                int idx = entry.key;
+                                String dog = entry.value;
+                                final colors = [
+                                  Color(0xFFFFE5CC),
+                                  Color(0xFFCCE5FF),
+                                  Color(0xFFFFCCE5),
+                                  Color(0xFFE5FFCC),
+                                ];
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: colors[idx % colors.length],
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Center(
+                                          child: Text('🐕', style: TextStyle(fontSize: 28)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              dog,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w800,
+                                                color: _ink,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (selectedDogs.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.close, size: 20),
+                                          color: _ink.withOpacity(0.5),
+                                          onPressed: () {
+                                            setState(() {
+                                              selectedDogs.removeAt(idx);
+                                            });
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
 
-        const SizedBox(height: 24),
+                              // Add Another Dog Button
+                              if (selectedDogs.length < availableDogs.length)
+                                InkWell(
+                                  onTap: () => _showAddDogDialog(),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: _ink.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _ink.withOpacity(0.2),
+                                        style: BorderStyle.solid,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Icon(Icons.add_circle_outline, color: _ink, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Add another dog',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: _ink,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
 
-        // Choose time
-        const _SectionTitle(title: 'Choose time'),
-        const SizedBox(height: 10),
+                        // Choose Date Section
+                        Row(
+                          children: const [
+                            Text(
+                              'Choose date',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: _ink,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Text('📅', style: TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        SizedBox(
+                          height: 50,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: dates.length,
+                            itemBuilder: (context, index) {
+                              final isSelected = dates[index] == selectedDate;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: _buildChip(
+                                  dates[index],
+                                  isSelected,
+                                  () => setState(() => selectedDate = dates[index]),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
 
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _times.map((t) {
-            final selected = t == _selectedTime;
-            return _TimeSlotButton(
-              label: t,
-              selected: selected,
-              onTap: () => setState(() => _selectedTime = t),
-            );
-          }).toList(),
-        ),
+                        // Duration Section
+                        Row(
+                          children: const [
+                            Text(
+                              'Duration',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: _ink,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Text('⏱️', style: TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        Row(
+                          children: durations.map((duration) {
+                            final isSelected = duration == selectedDuration;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: _buildChip(
+                                duration,
+                                isSelected,
+                                () => setState(() => selectedDuration = duration),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
 
-        const SizedBox(height: 28),
+                        // Choose Time Section
+                        Row(
+                          children: const [
+                            Text(
+                              'Choose time',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: _ink,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Text('🕐', style: TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: times.map((time) {
+                            final isSelected = time == selectedTime;
+                            return _buildChip(
+                              time,
+                              isSelected,
+                              () => setState(() => selectedTime = time),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 30),
 
-        // Summary + CTA
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Estimated total', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${(_selectedDuration / 10).round() * 2} JOD',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: _brown,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_dates[_selectedDateIndex]} · $_selectedTime',
-                    style: TextStyle(fontSize: 12, color: _ink.withOpacity(0.7)),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _brown,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Walk booked (demo) 🐾')),
-                  );
-                },
-                child: const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
-              )
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
+                        // Price Summary Card
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF5EB).withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFFFE5CC), width: 2),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Estimated total',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: _ink,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${_calculatePrice().toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                      color: _ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '$selectedDate • $selectedTime',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: _ink.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${selectedDogs.length} dog${selectedDogs.length > 1 ? 's' : ''} • $selectedDuration',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: _ink.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
 
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle({required this.title});
-
-  static const _ink = Color.fromARGB(255, 10, 51, 92);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        color: _ink,
+                        // Confirm Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _ink,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => BookingConfirmationScreen(
+        date: selectedDate,
+        time: selectedTime,
+        duration: selectedDuration,
+        dogs: List<String>.from(selectedDogs),
+        price: _calculatePrice(),
+        onNavigateToTab: widget.onNavigateToTab,
+        // walkerName: 'Sarah M.', // optional (it has default)
       ),
-    );
-  }
-}
+    ),
+  );
+},
 
-class _SelectableChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool compact;
 
-  const _SelectableChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.compact = false,
-  });
 
-  static const _ink = Color.fromARGB(255, 10, 51, 92);
-  static const _teal = Color(0xFF6FB3A9);
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? _teal.withOpacity(0.15) : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 16,
-            vertical: compact ? 8 : 10,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: selected ? _teal : _ink.withOpacity(0.85),
+                            child: const Text(
+                              'Confirm Booking',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-}
 
-class _TimeSlotButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _TimeSlotButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  static const _ink = Color.fromARGB(255, 10, 51, 92);
-  static const _teal = Color(0xFF6FB3A9);
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(
-          color: selected ? _teal : _ink.withOpacity(0.25),
-          width: 1.2,
+  void _showAddDogDialog() {
+    final availableToAdd = availableDogs.where((dog) => !selectedDogs.contains(dog)).toList();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Add another dog',
+          style: TextStyle(fontWeight: FontWeight.w900, color: _ink),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: selected ? _teal.withOpacity(0.08) : Colors.white,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: availableToAdd.map((dog) {
+            return ListTile(
+              leading: const Text('🐕', style: TextStyle(fontSize: 28)),
+              title: Text(
+                dog,
+                style: const TextStyle(fontWeight: FontWeight.w700, color: _ink),
+              ),
+              onTap: () {
+                setState(() {
+                  selectedDogs.add(dog);
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
       ),
-      onPressed: onTap,
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: selected ? _teal : _ink,
+    );
+  }
+
+  Widget _buildChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? _ink 
+              : Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? _ink 
+                : _ink.withOpacity(0.15),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: _ink.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ] : [],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: isSelected ? Colors.white : _ink,
+          ),
         ),
       ),
     );

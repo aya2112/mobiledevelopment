@@ -1,243 +1,699 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pawpals/walker_profile.dart';
+import 'package:pawpals/notifications_screen.dart';
+import 'package:pawpals/booking_history.dart';
+import 'package:pawpals/favorites_screen.dart';
 class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
+  final Function(int)? onNavigateToTab;
 
-  static const _ink   = Color.fromARGB(255, 10, 51, 92);
-  static const _brown = Color(0xFF6B3E22);
-  static const _teal  = Color(0xFF6FB3A9);
+  const HomeTab({super.key, this.onNavigateToTab});
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      children: [
-        // --- Greeting ---
-        Text(
-          'Good morning 👋',
-          style: TextStyle(
-            fontSize: 16,
-            color: _ink.withOpacity(0.75),
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Ready for today’s walks?',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: _ink,
-          ),
-        ),
-        const SizedBox(height: 20),
+  static const _ink = Color.fromARGB(255, 10, 51, 92);
+  static const _warmOverlay = Color(0x20B67845);
+  static const _cream = Color(0xFFF5EBE0);
 
-        // --- Next walk card ---
-        const _NextWalkCard(),
-        const SizedBox(height: 18),
-
-        // --- Quick actions ---
-        const Text(
-          'Quick actions',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: _ink,
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Row(
-          children: [
-            Expanded(
-              child: _QuickAction(
-                icon: Icons.search,
-                label: 'Find walker',
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _QuickAction(
-                icon: Icons.calendar_today_outlined,
-                label: 'Schedule walk',
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _QuickAction(
-                icon: Icons.my_location_outlined,
-                label: 'Live tracking',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // --- Recommended walkers ---
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text(
-              'Recommended walkers',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _ink,
-              ),
-            ),
-            Text(
-              'See all',
-              style: TextStyle(
-                fontSize: 14,
-                color: _teal,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        SizedBox(
-          height: 170,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: const [
-              _WalkerCard(
-                name: 'Lina Qasem',
-                rating: 4.9,
-                walks: 120,
-                pricePerWalk: 7,
-              ),
-              SizedBox(width: 12),
-              _WalkerCard(
-                name: 'Omar Haddad',
-                rating: 4.8,
-                walks: 98,
-                pricePerWalk: 6,
-              ),
-              SizedBox(width: 12),
-              _WalkerCard(
-                name: 'Sara N.',
-                rating: 4.7,
-                walks: 87,
-                pricePerWalk: 8,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // --- Summary ---
-        const Text(
-          'Today’s summary',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: _ink,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: const [
-            Expanded(
-              child: _StatPill(
-                label: 'Walks booked',
-                value: '2',
-                icon: Icons.event_available,
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _StatPill(
-                label: 'Minutes walked',
-                value: '45',
-                icon: Icons.timer_outlined,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+  String _getUserName() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.displayName != null && user.displayName!.isNotEmpty) {
+      return user.displayName!.split(' ')[0];
+    }
+    return 'Guest';
   }
-}
-
-// ---------------- helper widgets ----------------
-
-class _NextWalkCard extends StatelessWidget {
-  const _NextWalkCard();
-
-  static const _ink   = Color.fromARGB(255, 10, 51, 92);
-  static const _brown = Color(0xFF6B3E22);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE9DED0),
-              borderRadius: BorderRadius.circular(16),
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: const Color(0xFFF5E6D3),
+          elevation: 0,
+          flexibleSpace: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _ink.withOpacity(0.08)),
+                    ),
+                    child: Stack(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.notifications_outlined),
+                          color: _ink,
+                          iconSize: 22,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NotificationsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.red[400],
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  Text(
+                    "Hi, ${_getUserName()}! 👋",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: _ink,
+                    ),
+                  ),
+                  
+                  Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _ink.withOpacity(0.08)),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/images/pawpals_logo.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: const Icon(Icons.pets, color: _ink, size: 26),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFF5E6D3),
+              Color(0xFFEAD5BE),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Container(
+          color: _warmOverlay,
+          child: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                const Text(
-                  'Next walk',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: _ink,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Text(
+                            "Ready to book a walk?",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: _ink,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "🐾",
+                            style: TextStyle(fontSize: 22),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Find trusted walkers and keep your pup happy.",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _ink.withOpacity(0.85),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Today · 4:30 PM · with Luna 🐶',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: _ink.withOpacity(0.8),
-                  ),
+
+                const SizedBox(height: 20),
+
+                _PrimaryCard(
+                  onPressed: () {
+                    if (onNavigateToTab != null) {
+                      onNavigateToTab!(1); // Navigate to Book tab
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                _UpcomingWalkCard(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Opening walk details...")),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: const [
+                        Text(
+                          "Available today",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: _ink,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text("🦴", style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Showing all walkers...")),
+                        );
+                      },
+                      child: Text(
+                        "See all",
+                        style: TextStyle(
+                          color: _ink.withOpacity(0.8),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                _WalkerTile(
+                  name: "Sarah M.",
+                  rating: 4.5,
+                  distance: 0.9,
+                  price: 20,
+                  verified: true,
+                  avatarColor: const Color(0xFFFFE5CC),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WalkerProfile(
+                          name: "Sarah M.",
+                          rating: 4.5,
+                          distance: 0.9,
+                          price: 20,
+                          verified: true,
+                          avatarColor: Color(0xFFFFE5CC),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _WalkerTile(
+                  name: "Michael L.",
+                  rating: 4.7,
+                  distance: 3.2,
+                  price: 21,
+                  verified: true,
+                  avatarColor: const Color(0xFFCCE5FF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WalkerProfile(
+                          name: "Michael L.",
+                          rating: 4.7,
+                          distance: 3.2,
+                          price: 21,
+                          verified: true,
+                          avatarColor: Color(0xFFCCE5FF),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _WalkerTile(
+                  name: "Emily R.",
+                  rating: 4.9,
+                  distance: 1.5,
+                  price: 25,
+                  verified: false,
+                  avatarColor: const Color(0xFFFFCCE5),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WalkerProfile(
+                          name: "Emily R.",
+                          rating: 4.9,
+                          distance: 1.5,
+                          price: 25,
+                          verified: false,
+                          avatarColor: Color(0xFFFFCCE5),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                Row(
+                  children: const [
+                    Text(
+                      "Quick actions",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: _ink,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Text("⚡", style: TextStyle(fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickAction(
+                        icon: Icons.calendar_today_rounded,
+                        label: "Appointments",
+                        emoji: "📅",
+                        onTap: () {
+                          if (onNavigateToTab != null) {
+                            onNavigateToTab!(1); // Navigate to Book tab
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickAction(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: "Messages",
+                        emoji: "💬",
+                        onTap: () {
+                          if (onNavigateToTab != null) {
+                            onNavigateToTab!(2); // Navigate to Messages tab
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickAction(
+                        icon: Icons.history_rounded,
+                        label: "History",
+                        emoji: "📜",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const BookingHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickAction(
+                        icon: Icons.favorite_outline_rounded,
+                        label: "Favorites",
+                        emoji: "❤️",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FavoritesScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: _brown,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryCard extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _PrimaryCard({required this.onPressed});
+
+  static const _ink = Color.fromARGB(255, 10, 51, 92);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _ink,
+            _ink.withOpacity(0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: _ink.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Text(
+                "🐕",
+                style: TextStyle(fontSize: 32),
               ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Busy afternoon?",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "We can take them for a walk.",
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.white70,
             ),
-            onPressed: () {
-              // TODO: go to walk details
-            },
-            child: const Text(
-              'Details',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: _ink,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: 0,
+              ),
+              onPressed: onPressed,
+              child: const Text(
+                "Book Now",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _UpcomingWalkCard extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _UpcomingWalkCard({required this.onPressed});
+
+  static const _ink = Color.fromARGB(255, 10, 51, 92);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE5CC).withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFD4A3), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  "⏰",
+                  style: TextStyle(fontSize: 22),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                "Upcoming Walk",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: _ink,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Today at 4:00 PM",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: _ink,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Text(
+                          "with Sarah M.",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _ink,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.verified,
+                          size: 14,
+                          color: _ink.withOpacity(0.7),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: onPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: _ink,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  "View",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WalkerTile extends StatelessWidget {
+  final String name;
+  final double rating;
+  final double distance;
+  final int price;
+  final bool verified;
+  final Color avatarColor;
+  final VoidCallback onTap;
+
+  const _WalkerTile({
+    required this.name,
+    required this.rating,
+    required this.distance,
+    required this.price,
+    this.verified = false,
+    required this.avatarColor,
+    required this.onTap,
+  });
+
+  static const _ink = Color.fromARGB(255, 10, 51, 92);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _ink.withOpacity(0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: avatarColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      "🐕",
+                      style: TextStyle(fontSize: 28),
+                    ),
+                  ),
+                ),
+                if (verified)
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.verified,
+                        color: _ink,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: _ink,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    "⭐ $rating • ${distance.toStringAsFixed(1)} mi away",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _ink.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "\$price/hr",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: _ink,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: _ink.withOpacity(0.3),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -246,231 +702,55 @@ class _NextWalkCard extends StatelessWidget {
 class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _QuickAction({required this.icon, required this.label});
+  final String emoji;
+  final VoidCallback onTap;
 
-  static const _ink = Color.fromARGB(255, 10, 51, 92);
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // TODO: handle tap
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: _ink),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _ink.withOpacity(0.9),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WalkerCard extends StatelessWidget {
-  final String name;
-  final double rating;
-  final int walks;
-  final int pricePerWalk;
-
-  const _WalkerCard({
-    required this.name,
-    required this.rating,
-    required this.walks,
-    required this.pricePerWalk,
-  });
-
-  static const _ink   = Color.fromARGB(255, 10, 51, 92);
-  static const _brown = Color(0xFF6B3E22);
-  static const _teal  = Color(0xFF6FB3A9);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 170,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // avatar + rating
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFFE9DED0),
-                child: Text(
-                  name[0],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _ink,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: _ink,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: 2),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: _ink,
-                        ),
-                      ),
-                      Text(
-                        ' · $walks walks',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _ink.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$pricePerWalk JOD',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _brown,
-                ),
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  foregroundColor: Colors.white,
-                  backgroundColor: _teal,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  // TODO: book this walker
-                },
-                child: const Text(
-                  'Book',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatPill extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _StatPill({
-    required this.label,
-    required this.value,
+  const _QuickAction({
     required this.icon,
+    required this.label,
+    required this.emoji,
+    required this.onTap,
   });
 
   static const _ink = Color.fromARGB(255, 10, 51, 92);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE9DED0),
-              borderRadius: BorderRadius.circular(14),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _ink.withOpacity(0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Icon(icon, size: 18, color: _ink),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
                 style: const TextStyle(
-                  fontSize: 18,
                   fontWeight: FontWeight.w700,
+                  fontSize: 13,
                   color: _ink,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _ink.withOpacity(0.75),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
