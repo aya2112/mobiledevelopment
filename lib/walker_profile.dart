@@ -19,7 +19,7 @@ class WalkerProfile extends StatelessWidget {
   });
 
   static const _ink = Color.fromARGB(255, 10, 51, 92);
-  //static const _cream = Color(0xFFF5EBE0);
+  
 
   @override
   Widget build(BuildContext context) {

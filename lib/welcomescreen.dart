@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'colors.dart';
 import 'login.dart';
 import 'signup.dart';
-//import 'auth_wrapper.dart';
+
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -26,6 +25,8 @@ class WelcomeScreen extends StatelessWidget {
             ),
           ),
         ),
+
+
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -41,6 +42,8 @@ class WelcomeScreen extends StatelessWidget {
                       fit: BoxFit.contain,
                     ),
                   ),
+
+
                   const SizedBox(height: 24),
                   const Text(
                     'Welcome to PawPals',
@@ -51,6 +54,8 @@ class WelcomeScreen extends StatelessWidget {
                       color: Color.fromARGB(255, 10, 51, 92),
                     ),
                   ),
+
+
                   const SizedBox(height: 12),
                   const Text(
                     'Find trusted walkers and keep your pup happy.',
@@ -97,6 +102,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: () {

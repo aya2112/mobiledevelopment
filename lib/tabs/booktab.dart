@@ -1,4 +1,4 @@
-import 'dart:async'; // Required for StreamSubscription
+import 'dart:async'; 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawpals/booking_confirmation_screen.dart';
@@ -23,17 +23,17 @@ class _BookTabState extends State<BookTab> {
   List<Map<String, dynamic>> selectedDogs = [];
   List<Map<String, dynamic>> allUserDogs = [];
   bool isLoadingDogs = true;
-  StreamSubscription? _dogSubscription; // ✅ Live connection to database
+  StreamSubscription? _dogSubscription; 
 
   Map<String, dynamic>? selectedWalker;
 
-  final dates = ['Today', 'Tue 26', 'Wed 27', 'Thu 28'];
+  final dates = ['Today', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   final durations = ['30 min', '45 min', '60 min'];
   final times = ['3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'];
 
   final List<Map<String, dynamic>> availableWalkers = [
     {
-      'id': 'hS3nhkZoq2M4whude4Zmzxu7WTH3',
+      'id': 'hS3nhkZoq2M4whude4Zmzxu7WTH3', 
       'name': 'Sarah M.',
       'rating': 4.5,
       'distance': 0.9,
@@ -42,7 +42,7 @@ class _BookTabState extends State<BookTab> {
       'color': Color(0xFFFFE5CC),
     },
     {
-      'id': 'walker2_uid',
+      'id': 'walker_2_id_here',
       'name': 'Michael L.',
       'rating': 4.7,
       'distance': 3.2,
@@ -51,7 +51,7 @@ class _BookTabState extends State<BookTab> {
       'color': Color(0xFFCCE5FF),
     },
     {
-      'id': 'walker3_uid',
+      'id': 'walker_3_id_here',
       'name': 'Emily R.',
       'rating': 4.9,
       'distance': 1.5,
@@ -65,25 +65,21 @@ class _BookTabState extends State<BookTab> {
   void initState() {
     super.initState();
     selectedWalker = availableWalkers.first;
-    _setupDogListener(); // ✅ Start listening to changes immediately
+    _setupDogListener(); 
   }
 
   @override
   void dispose() {
-    _dogSubscription?.cancel(); // ✅ Clean up listener to prevent memory leaks
+    _dogSubscription?.cancel(); 
     super.dispose();
   }
 
-  // ✅ NEW: Robust Live Listener
   void _setupDogListener() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("❌ NO USER LOGGED IN");
       setState(() => isLoadingDogs = false);
       return;
     }
-
-    print("✅ LISTENING FOR DOGS FOR USER: ${user.uid}");
 
     _dogSubscription = FirebaseFirestore.instance
         .collection('users')
@@ -92,15 +88,12 @@ class _BookTabState extends State<BookTab> {
         .snapshots()
         .listen((snapshot) {
       
-      print("📦 RECEIVED ${snapshot.docs.length} DOGS FROM DB");
-      
       final List<Map<String, dynamic>> loadedDogs = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
           'id': doc.id,
           'name': data['name'] ?? 'Unknown Dog',
           'breed': data['breed'] ?? '',
-          // Handle color safety
           'color': data['color'] is int 
               ? Color(data['color']) 
               : const Color(0xFFFFE5CC),
@@ -112,20 +105,14 @@ class _BookTabState extends State<BookTab> {
           allUserDogs = loadedDogs;
           isLoadingDogs = false;
           
-          // Auto-select first dog if nothing is selected yet
           if (selectedDogs.isEmpty && allUserDogs.isNotEmpty) {
             selectedDogs = [allUserDogs.first];
-            print("👉 AUTO-SELECTED: ${allUserDogs.first['name']}");
           }
         });
       }
     }, onError: (error) {
-      print("❌ ERROR LOADING DOGS: $error");
       if (mounted) {
         setState(() => isLoadingDogs = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading dogs: $error")),
-        );
       }
     });
   }
@@ -250,6 +237,7 @@ class _BookTabState extends State<BookTab> {
           child: SafeArea(
             child: Column(
               children: [
+                // Header
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -280,7 +268,7 @@ class _BookTabState extends State<BookTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Walker Selection
+                        // 1. Walker Selection
                         InkWell(
                           onTap: _showWalkerSelection,
                           borderRadius: BorderRadius.circular(18),
@@ -316,7 +304,7 @@ class _BookTabState extends State<BookTab> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Dogs Section
+                        // 2. Dogs Section
                         Row(children: const [
                           Text('Your dogs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: _ink)),
                           SizedBox(width: 6),
@@ -402,7 +390,7 @@ class _BookTabState extends State<BookTab> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Date & Time
+                        // 3. Date Selection
                         const Text('Choose date', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: _ink)),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -418,7 +406,7 @@ class _BookTabState extends State<BookTab> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Duration
+                        // 4. Duration Selection
                         const Text('Duration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: _ink)),
                         const SizedBox(height: 12),
                         Row(children: durations.map((d) => Padding(
@@ -427,7 +415,23 @@ class _BookTabState extends State<BookTab> {
                         )).toList()),
                         const SizedBox(height: 20),
 
-                        // Price
+                        // Time Selection 
+                        const Text('Choose time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: _ink)),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: times.map((time) {
+                            return _buildChip(
+                              time, 
+                              time == selectedTime, 
+                              () => setState(() => selectedTime = time)
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // 6. Price Summary
                         Container(
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
@@ -445,7 +449,7 @@ class _BookTabState extends State<BookTab> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Confirm Button
+                        // 7. Confirm Button
                         SizedBox(
                           width: double.infinity,
                           height: 56,

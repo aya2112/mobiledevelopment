@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'homescreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'auth_wrapper.dart';
@@ -213,8 +212,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscure
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
                                     color: _kPrimaryColor,
                                   ),
                                   onPressed: () =>

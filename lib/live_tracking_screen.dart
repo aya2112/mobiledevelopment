@@ -255,44 +255,7 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
             ),
           ),
 
-          // Debug info
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.black87,
-            child: SafeArea(
-              top: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'DEBUG INFO',
-                    style: TextStyle(
-                      color: Colors.green[400],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Walk ID: ${widget.walkId}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
-                  ),
-                  Text(
-                    'Updates received: $_updateCount',
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
-                  ),
-                  Text(
-                    'Markers: ${_markers.length}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
-                  ),
-                  Text(
-                    'Controller: ${_mapController != null ? "✅" : "❌"}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          
         ],
       ),
     );

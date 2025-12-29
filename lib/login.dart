@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
-//import 'homescreen.dart';
-//import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_wrapper.dart';
 import 'welcomescreen.dart';
@@ -19,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
 
-  // FIX 1: Password should be hidden by default
   bool _obscure = true; 
   bool _submitting = false;
 
@@ -53,7 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if fields are not empty to enable button visually
     final bool hasInput = _emailCtrl.text.isNotEmpty && _pwdCtrl.text.isNotEmpty;
 
     return Scaffold(
@@ -100,7 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        // FIX 2: Rebuild UI on typing so button activates
                         onChanged: (value) => setState(() {}),
                         style: const TextStyle(
                           fontSize: 16,
@@ -133,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _pwdCtrl,
                         obscureText: _obscure,
                         textInputAction: TextInputAction.done,
-                        // FIX 2: Rebuild UI on typing so button activates
                         onChanged: (value) => setState(() {}),
                         style: const TextStyle(
                             fontSize: 16, color: Color(0xFF333333)),
@@ -145,7 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderSide: BorderSide(color: AppColors.charcoal),
                           ),
                           suffixIcon: IconButton(
-                            // FIX 3: Swapped icons to match your preference (Crossed = Hidden)
                             icon: Icon(
                               _obscure ? Icons.visibility_off : Icons.visibility,
                               color: AppColors.charcoal,
@@ -189,7 +182,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        // FIX 4: Button enables if fields have input & not currently submitting
                         onPressed: (hasInput && !_submitting) ? _submit : null,
                         child: _submitting
                             ? const SizedBox(

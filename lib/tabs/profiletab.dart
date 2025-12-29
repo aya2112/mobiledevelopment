@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pawpals/auth_wrapper.dart'; // Ensure this import path is correct for your project
+import 'package:pawpals/auth_wrapper.dart'; 
 
-// ==========================================
+
 // 1. PROFILE TAB (Main Screen)
-// ==========================================
+
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -93,7 +93,7 @@ class ProfileTab extends StatelessWidget {
                   
                   const SizedBox(height: 24),
                   
-                  // --- DOGS SECTION (Connected to Firestore) ---
+                  // --- DOGS SECTION 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -238,7 +238,7 @@ class ProfileTab extends StatelessWidget {
                             Icons.pets_outlined,
                             'Dog profiles',
                             'Manage your dogs',
-                            // Reuses the Add/Edit logic but maybe purely for list view
+                            
                             () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditDogScreen())), 
                           ),
                           _buildDivider(),
@@ -330,7 +330,7 @@ class ProfileTab extends StatelessWidget {
     );
   }
 
-  // Updated Dog Card to handle Taps for Editing
+  
   Widget _buildDogCard(BuildContext context, String docId, String name, String breed, String age, Color bgColor) {
     return GestureDetector(
       onTap: () {
@@ -433,9 +433,8 @@ class ProfileTab extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 2. ADD / EDIT DOG SCREEN (New Implementation)
-// ==========================================
+
+// 2. ADD / EDIT DOG SCREEN 
 
 class AddEditDogScreen extends StatefulWidget {
   final String? docId;
@@ -644,9 +643,9 @@ class _AddEditDogScreenState extends State<AddEditDogScreen> {
   }
 }
 
-// ==========================================
+
 // 3. EDIT PROFILE SCREEN (Placeholder)
-// ==========================================
+
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -744,7 +743,7 @@ class PaymentMethodsScreen extends StatelessWidget {
 }
 
 // ==========================================
-// 5. BOOKING HISTORY SCREEN (Original + Connected)
+// 5. BOOKING HISTORY SCREEN 
 // ==========================================
 
 class BookingHistoryScreen extends StatelessWidget {
@@ -754,7 +753,6 @@ class BookingHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // NOTE: Ideally, fetch this from Firestore too. Kept static for now as requested.
     final bookings = [
       {
         'walker': 'Sarah M.',
@@ -766,7 +764,6 @@ class BookingHistoryScreen extends StatelessWidget {
         'status': 'Completed',
         'color': const Color(0xFFFFE5CC),
       },
-      // ... (Rest of your dummy data)
     ];
 
     return Scaffold(
@@ -926,7 +923,7 @@ class BookingHistoryScreen extends StatelessWidget {
 }
 
 // ==========================================
-// 6. NOTIFICATIONS SCREEN (Original + Connected)
+// 6. NOTIFICATIONS SCREEN 
 // ==========================================
 
 class NotificationsScreen extends StatefulWidget {
@@ -949,7 +946,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'color': Colors.green,
       'unread': true,
     },
-    // ... (Your existing notification data)
+    // ... ( existing notification data)
   ];
 
   @override
@@ -1033,7 +1030,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildNotificationCard(Map<String, dynamic> notification) {
     final bool isUnread = notification['unread'] ?? false;
-    // ... (Your card implementation)
     return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

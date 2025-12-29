@@ -14,7 +14,7 @@ class HomeTab extends StatelessWidget {
 
   static const _ink = Color.fromARGB(255, 10, 51, 92);
   static const _warmOverlay = Color(0x20B67845);
-  //static const _cream = Color(0xFFF5EBE0);
+ 
 
   String _getUserName() {
     final user = FirebaseAuth.instance.currentUser;
@@ -491,7 +491,6 @@ class _PrimaryCard extends StatelessWidget {
 }
 
 class _UpcomingWalkCard extends StatelessWidget {
-  // 1. ADD THESE PARAMETERS to make the card dynamic
   final String date;
   final String time;
   final String walkerName;
@@ -553,7 +552,6 @@ class _UpcomingWalkCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 2. USE THE DYNAMIC DATA for the date and time
                     Text(
                       "$date at $time",
                       style: const TextStyle(
@@ -565,7 +563,6 @@ class _UpcomingWalkCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Row(
                       children: [
-                        // 3. USE THE DYNAMIC DATA for the walker name
                         Text(
                           "with $walkerName",
                           style: const TextStyle(
@@ -586,7 +583,6 @@ class _UpcomingWalkCard extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {
-                  // 4. NAVIGATE using the real walkId and names
                   Navigator.push(
                     context,
                     MaterialPageRoute(

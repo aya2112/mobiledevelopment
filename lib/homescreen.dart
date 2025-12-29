@@ -30,7 +30,6 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
 
-    // ✅ Pass callback to tabs that need to switch bottom-nav index
     _pages = [
       HomeTab(onNavigateToTab: _navigateToTab),
       BookTab(onNavigateToTab: _navigateToTab),
@@ -49,7 +48,6 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       backgroundColor: AppColors.cream,
 
-      // ✅ Hide AppBar on Home (0) and Book (1) because those screens have their own design/header
       appBar: (_index == 0 || _index == 1)
           ? null
           : AppBar(
