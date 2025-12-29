@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'walker_live_location_service.dart';
 
@@ -23,43 +22,43 @@ class WalkerTrackingScreen extends StatefulWidget {
 class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
   static const _ink = Color.fromARGB(255, 10, 51, 92);
 
+  // ✅ Get the singleton instance
+  final _service = WalkerLiveLocationService.instance;
+  
   bool _tracking = false;
   String _status = 'Ready to start';
   String? _errorMessage;
   int _elapsedSeconds = 0;
   Timer? _timer;
 
-  late final WalkerLiveLocationService _svc;
-
   @override
   void initState() {
     super.initState();
-    _svc = WalkerLiveLocationService(walkId: widget.walkId);
     
-    // If walk already active, resume it
-    if (widget.isActive) {
-      _resumeWalk();
+    debugPrint("🔍 [SCREEN] initState - walkId: ${widget.walkId}");
+    debugPrint("🔍 [SCREEN] Service active: ${_service.isActive}");
+    debugPrint("🔍 [SCREEN] Current walk: ${_service.currentWalkId}");
+    
+    // Check if service is already tracking this walk
+    if (_service.isTrackingWalk(widget.walkId)) {
+      debugPrint("✅ [SCREEN] Resuming active walk");
+      _resumeActiveWalk();
+    } else if (widget.isActive) {
+      debugPrint("⚠️ [SCREEN] Walk marked active but service not tracking - restarting");
+      _start();
     }
   }
 
-  Future<void> _resumeWalk() async {
+  void _resumeActiveWalk() {
     setState(() {
       _tracking = true;
-      _status = 'Walk resumed';
+      _status = 'Walk in progress';
     });
-    
-    try {
-      await _svc.start();
-      _startTimer();
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to resume: ${e.toString()}';
-        _tracking = false;
-      });
-    }
+    _startTimer();
   }
 
   void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() => _elapsedSeconds++);
@@ -68,16 +67,18 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
   }
 
   Future<void> _start() async {
+    debugPrint("▶️ [SCREEN] Start button pressed");
+    
     setState(() {
       _errorMessage = null;
       _status = 'Starting...';
     });
 
     try {
-      // Start location tracking
-      await _svc.start();
+      // ✅ Start the service
+      await _service.startWalk(widget.walkId);
       
-      // Update walk status in Firestore
+      // Update Firestore
       await FirebaseFirestore.instance
           .collection('walks')
           .doc(widget.walkId)
@@ -96,13 +97,17 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Walk started! Location tracking active ✅'),
+            content: Text('Walk started! GPS tracking active ✅'),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
           ),
         );
       }
+
+      debugPrint("✅ [SCREEN] Walk started successfully");
+
     } catch (e) {
+      debugPrint("❌ [SCREEN] Failed to start: $e");
+      
       setState(() {
         _errorMessage = e.toString();
         _status = 'Failed to start';
@@ -113,7 +118,6 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
           SnackBar(
             content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -121,7 +125,8 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
   }
 
   Future<void> _stop() async {
-    // Show confirmation dialog
+    debugPrint("⏹️ [SCREEN] Stop button pressed");
+    
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -147,16 +152,14 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
 
     if (confirm != true) return;
 
-    // Stop tracking and update Firestore
-    await _svc.stop();
+    // ✅ Stop the service
+    await _service.stopWalk();
     _timer?.cancel();
 
     await FirebaseFirestore.instance
         .collection('walks')
         .doc(widget.walkId)
         .update({
-      'status': 'completed',
-      'completedAt': FieldValue.serverTimestamp(),
       'durationSeconds': _elapsedSeconds,
     });
 
@@ -173,9 +176,10 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
         ),
       );
       
-      // Return to walker home
       Navigator.pop(context);
     }
+
+    debugPrint("✅ [SCREEN] Walk ended successfully");
   }
 
   Future<void> _logActivity(String activity) async {
@@ -190,17 +194,14 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$activity logged'),
-            duration: const Duration(seconds: 2),
-          ),
+          SnackBar(content: Text('$activity logged')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to log activity: $e'),
+            content: Text('Failed: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -216,224 +217,246 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
 
   @override
   void dispose() {
-    _svc.stop();
+    debugPrint("🗑️ [SCREEN] dispose called - but service keeps running!");
     _timer?.cancel();
+    // ⚠️ DO NOT stop the service here!
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5E6D3),
-      appBar: AppBar(
-        title: Text('Walking ${widget.dogName}'),
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop && _tracking) {
+          debugPrint("⬅️ [SCREEN] Going back - service still running");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Walk continues in background 📍'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
         backgroundColor: const Color(0xFFF5E6D3),
-        foregroundColor: _ink,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Status card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: _ink.withOpacity(0.12)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      _tracking ? Icons.directions_walk : Icons.pets,
-                      size: 56,
-                      color: _tracking ? Colors.green : _ink,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _status,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: _ink,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (_tracking) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        _formatDuration(_elapsedSeconds),
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.green[700],
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Walk Duration',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _ink.withOpacity(0.6),
-                        ),
+        appBar: AppBar(
+          title: Text('Walking ${widget.dogName}'),
+          backgroundColor: const Color(0xFFF5E6D3),
+          foregroundColor: _ink,
+          elevation: 0,
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Status card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: _ink.withOpacity(0.12)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
-                    if (_errorMessage != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        _tracking ? Icons.directions_walk : Icons.pets,
+                        size: 56,
+                        color: _tracking ? Colors.green : _ink,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _status,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: _ink,
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.red,
+                        textAlign: TextAlign.center,
+                      ),
+                      if (_tracking) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _formatDuration(_elapsedSeconds),
+                          style: TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.green[700],
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Walk Duration',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _ink.withOpacity(0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.radio_button_checked, size: 12, color: Colors.green[700]),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Running in background',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green[700],
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(fontSize: 13, color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+
+                // Action button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _tracking ? Colors.red : _ink,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: _tracking ? _stop : _start,
+                    child: Text(
+                      _tracking ? 'End Walk' : 'Start Walk',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Quick actions
+                if (_tracking) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickAction('Photo', Icons.camera_alt, () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Coming soon 📸')),
+                          );
+                        }),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickAction(
+                          'Bathroom',
+                          Icons.local_cafe,
+                          () => _logActivity('Bathroom break 💧'),
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 20),
-
-              // Action button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _tracking ? Colors.red : _ink,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 2,
                   ),
-                  onPressed: _tracking ? _stop : _start,
-                  child: Text(
-                    _tracking ? 'End Walk' : 'Start Walk',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Quick actions (only when tracking)
-              if (_tracking) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickAction(
-                        'Photo',
-                        Icons.camera_alt,
-                        () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Photo feature coming soon 📸'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildQuickAction(
-                        'Bathroom',
-                        Icons.local_cafe,
-                        () => _logActivity('Bathroom break 💧'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickAction(
-                        'Water',
-                        Icons.water_drop,
-                        () => _logActivity('Water break 💦'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildQuickAction(
-                        'Playing',
-                        Icons.pets,
-                        () => _logActivity('Playing at park 🎾'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              const Spacer(),
-
-              // Info card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _tracking 
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _tracking 
-                        ? Colors.green.withOpacity(0.3)
-                        : Colors.blue.withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _tracking ? Icons.location_on : Icons.info_outline,
-                      color: _tracking ? Colors.green : Colors.blue,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _tracking
-                            ? 'Your location is being shared with the owner in real-time'
-                            : 'Press "Start Walk" to begin GPS tracking',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _tracking ? Colors.green[900] : Colors.blue[900],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickAction(
+                          'Water',
+                          Icons.water_drop,
+                          () => _logActivity('Water break 💦'),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickAction(
+                          'Playing',
+                          Icons.pets,
+                          () => _logActivity('Playing 🎾'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                const Spacer(),
+
+                // Info card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _tracking 
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _tracking ? Icons.location_on : Icons.info_outline,
+                        color: _tracking ? Colors.green : Colors.blue,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _tracking
+                              ? 'Location shared in real-time. Safe to close this screen.'
+                              : 'Press "Start Walk" to begin GPS tracking',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _tracking ? Colors.green[900] : Colors.blue[900],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -444,20 +467,14 @@ class _WalkerTrackingScreenState extends State<WalkerTrackingScreen> {
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: BorderSide(color: _ink.withOpacity(0.2)),
       ),
       onPressed: onTap,
       icon: Icon(icon, color: _ink, size: 20),
       label: Text(
         label,
-        style: const TextStyle(
-          color: _ink,
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
+        style: const TextStyle(color: _ink, fontWeight: FontWeight.w600, fontSize: 14),
       ),
     );
   }

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
-import 'homescreen.dart';
-import 'package:firebase_core/firebase_core.dart';
+//import 'homescreen.dart';
+//import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_wrapper.dart';
 import 'welcomescreen.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,7 +19,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
 
-  bool _obscure = false;
+  // FIX 1: Password should be hidden by default
+  bool _obscure = true; 
   bool _submitting = false;
 
   @override
@@ -30,30 +30,32 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-Future<void> login() async {
-  try {
-    await FirebaseAuth.instance.signInWithEmailAndPassword(
-      email: _emailCtrl.text.trim(),
-      password: _pwdCtrl.text.trim(),
-    );
-  } catch (e) {
-    // Firebase error handling later if needed
+  Future<void> login() async {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailCtrl.text.trim(),
+        password: _pwdCtrl.text.trim(),
+      );
+    } catch (e) {
+      // Firebase error handling later if needed
+    }
   }
-}
 
-
-Future<void> resetPassword() async {
-  try {
-    await FirebaseAuth.instance.sendPasswordResetEmail(
-      email: _emailCtrl.text.trim(),
-    );
-  } catch (e) {
-    // (file just has empty catch)
+  Future<void> resetPassword() async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: _emailCtrl.text.trim(),
+      );
+    } catch (e) {
+      // empty catch
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    // Check if fields are not empty to enable button visually
+    final bool hasInput = _emailCtrl.text.isNotEmpty && _pwdCtrl.text.isNotEmpty;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -92,14 +94,16 @@ Future<void> resetPassword() async {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // --- Email ---
                       TextFormField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
+                        // FIX 2: Rebuild UI on typing so button activates
+                        onChanged: (value) => setState(() {}),
                         style: const TextStyle(
-                          fontSize: 16, 
+                          fontSize: 16,
                           color: Color(0xFF333333),
                         ),
                         decoration: const InputDecoration(
@@ -114,12 +118,10 @@ Future<void> resetPassword() async {
                           if (v == null || v.isEmpty) {
                             return 'Please enter your email';
                           }
-
                           final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                           if (!emailRegex.hasMatch(v)) {
                             return 'Enter a valid email address';
                           }
-
                           return null;
                         },
                       ),
@@ -131,6 +133,8 @@ Future<void> resetPassword() async {
                         controller: _pwdCtrl,
                         obscureText: _obscure,
                         textInputAction: TextInputAction.done,
+                        // FIX 2: Rebuild UI on typing so button activates
+                        onChanged: (value) => setState(() {}),
                         style: const TextStyle(
                             fontSize: 16, color: Color(0xFF333333)),
                         decoration: InputDecoration(
@@ -141,8 +145,9 @@ Future<void> resetPassword() async {
                             borderSide: BorderSide(color: AppColors.charcoal),
                           ),
                           suffixIcon: IconButton(
+                            // FIX 3: Swapped icons to match your preference (Crossed = Hidden)
                             icon: Icon(
-                              _obscure ? Icons.visibility : Icons.visibility_off,
+                              _obscure ? Icons.visibility_off : Icons.visibility,
                               color: AppColors.charcoal,
                             ),
                             onPressed: () =>
@@ -177,14 +182,15 @@ Future<void> resetPassword() async {
                       // --- Submit button ---
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromARGB(255, 10, 51, 92),
+                          backgroundColor: const Color.fromARGB(255, 10, 51, 92),
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 52),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        onPressed: _canSubmit ? _submit : null,
+                        // FIX 4: Button enables if fields have input & not currently submitting
+                        onPressed: (hasInput && !_submitting) ? _submit : null,
                         child: _submitting
                             ? const SizedBox(
                                 width: 22,
@@ -207,8 +213,8 @@ Future<void> resetPassword() async {
                 ),
               ),
             ),
-            
-            // --- BACK BUTTON (FIXED) ---
+
+            // --- BACK BUTTON ---
             Positioned(
               top: 40,
               left: 8,
@@ -216,11 +222,9 @@ Future<void> resetPassword() async {
                 icon: const Icon(Icons.arrow_back, size: 28),
                 color: AppColors.charcoal,
                 onPressed: () {
-                  // Check if there's a screen to pop back to
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   } else {
-                    // If no screen behind, go to Welcome screen
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -235,11 +239,9 @@ Future<void> resetPassword() async {
     );
   }
 
-  bool get _canSubmit =>
-      _formKey.currentState?.validate() == true && !_submitting;
-
   Future<void> _submit() async {
-    if (!_canSubmit) return;
+    // Run full validation here when button is clicked
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() => _submitting = true);
 
@@ -249,13 +251,10 @@ Future<void> resetPassword() async {
 
     setState(() => _submitting = false);
 
-    
-
     Navigator.pushAndRemoveUntil(
-  context,
-  MaterialPageRoute(builder: (_) => const AuthWrapper()),
-  (route) => false,
-);
-
+      context,
+      MaterialPageRoute(builder: (_) => const AuthWrapper()),
+      (route) => false,
+    );
   }
 }

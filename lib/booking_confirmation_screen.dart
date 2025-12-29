@@ -13,12 +13,12 @@ class BookingConfirmationScreen extends StatelessWidget {
 
   const BookingConfirmationScreen({
     super.key,
+    required this.walkerName,
     required this.date,
     required this.time,
     required this.duration,
     required this.dogs,
     required this.price,
-    this.walkerName = 'Sarah M.',
     this.onNavigateToTab,
   });
 

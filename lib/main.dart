@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
-import 'login.dart';
-import 'signup.dart';
+//import 'login.dart';
+//import 'signup.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'homescreen.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
+//import 'homescreen.dart';
 import 'auth_wrapper.dart';
-import 'welcomescreen.dart';
+//import 'welcomescreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'colors.dart';
+//import 'colors.dart';
 import 'login.dart';
 import 'signup.dart';
-import 'auth_wrapper.dart';
+//import 'auth_wrapper.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

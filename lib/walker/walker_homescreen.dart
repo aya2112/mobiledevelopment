@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pawpals/welcomescreen.dart';
 import 'walker_tracking_screen.dart';
 
 class WalkerHomeScreen extends StatelessWidget {
@@ -28,7 +29,11 @@ class WalkerHomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout, color: _ink),
             onPressed: () async {
-              await FirebaseAuth.instance.signOut();
+              Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (_) => WelcomeScreen()),
+);
+
             },
           ),
         ],
@@ -38,7 +43,7 @@ class WalkerHomeScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('walks')
             .where('walkerId', isEqualTo: user.uid)
-            .where('status', whereIn: ['scheduled', 'active'])
+            .where('status', whereIn: ['scheduled', 'active', 'completed'])
             .orderBy('scheduledTime')
             .snapshots(),
         builder: (context, snapshot) {

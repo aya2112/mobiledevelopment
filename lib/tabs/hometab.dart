@@ -4,6 +4,9 @@ import 'package:pawpals/walker_profile.dart';
 import 'package:pawpals/notifications_screen.dart';
 import 'package:pawpals/booking_history.dart';
 import 'package:pawpals/favorites_screen.dart';
+import 'package:pawpals/live_tracking_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class HomeTab extends StatelessWidget {
   final Function(int)? onNavigateToTab;
 
@@ -11,7 +14,7 @@ class HomeTab extends StatelessWidget {
 
   static const _ink = Color.fromARGB(255, 10, 51, 92);
   static const _warmOverlay = Color(0x20B67845);
-  static const _cream = Color(0xFFF5EBE0);
+  //static const _cream = Color(0xFFF5EBE0);
 
   String _getUserName() {
     final user = FirebaseAuth.instance.currentUser;
@@ -170,13 +173,33 @@ class HomeTab extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                _UpcomingWalkCard(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Opening walk details...")),
-                    );
-                  },
-                ),
+                StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('walks')
+        .where('ownerId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('status', whereIn: ['scheduled', 'active'])
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return const SizedBox.shrink(); // Hide the card if there's no booking
+      }
+
+      final walkDoc = snapshot.data!.docs.first;
+      final data = walkDoc.data() as Map<String, dynamic>;
+
+      return _UpcomingWalkCard(
+        walkId: walkDoc.id,
+        date: data['date'] ?? 'Today',
+        time: data['scheduledTime'] ?? '4:00 PM',
+        walkerName: data['walkerName'] ?? 'Sarah M.',
+        dogName: data['dogName'] ?? 'Luna',
+      );
+    },
+  ),
+
+  const SizedBox(height: 24),
 
                 const SizedBox(height: 24),
 
@@ -468,8 +491,21 @@ class _PrimaryCard extends StatelessWidget {
 }
 
 class _UpcomingWalkCard extends StatelessWidget {
-  final VoidCallback onPressed;
-  const _UpcomingWalkCard({required this.onPressed});
+  // 1. ADD THESE PARAMETERS to make the card dynamic
+  final String date;
+  final String time;
+  final String walkerName;
+  final String dogName;
+  final String walkId;
+
+  const _UpcomingWalkCard({
+    super.key,
+    required this.date,
+    required this.time,
+    required this.walkerName,
+    required this.dogName,
+    required this.walkId,
+  });
 
   static const _ink = Color.fromARGB(255, 10, 51, 92);
 
@@ -517,9 +553,10 @@ class _UpcomingWalkCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Today at 4:00 PM",
-                      style: TextStyle(
+                    // 2. USE THE DYNAMIC DATA for the date and time
+                    Text(
+                      "$date at $time",
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: _ink,
@@ -528,9 +565,10 @@ class _UpcomingWalkCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Row(
                       children: [
-                        const Text(
-                          "with Sarah M.",
-                          style: TextStyle(
+                        // 3. USE THE DYNAMIC DATA for the walker name
+                        Text(
+                          "with $walkerName",
+                          style: const TextStyle(
                             fontSize: 14,
                             color: _ink,
                           ),
@@ -547,7 +585,19 @@ class _UpcomingWalkCard extends StatelessWidget {
                 ),
               ),
               ElevatedButton(
-                onPressed: onPressed,
+                onPressed: () {
+                  // 4. NAVIGATE using the real walkId and names
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LiveTrackingMapScreen(
+                        walkId: walkId, 
+                        walkerName: walkerName,
+                        dogName: dogName,
+                      ),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: _ink,
